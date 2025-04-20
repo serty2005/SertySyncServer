@@ -1,67 +1,31 @@
 # app/models/base.py
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import func, Column, DateTime, Integer
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlmodel import SQLModel, Field # Снова импортируем Field
-from sqlalchemy.orm import declared_attr
+from sqlmodel import SQLModel, Field, Column
+from sqlalchemy import func, DateTime  # Для серверных значений по умолчанию
 
 class BaseUUIDModel(SQLModel):
-
-    # --- Определения колонок SQLAlchemy через @declared_attr ---
-    # Они определяют фактическую структуру в БД.
-    @declared_attr
-    def id(cls) -> Column:
-        return Column(
-            PG_UUID(as_uuid=True),
-            primary_key=True, # Определяем для SQLAlchemy
-            server_default=func.gen_random_uuid(),
-            index=True,
-            nullable=False
-        )
-
-    @declared_attr
-    def revision(cls) -> Column:
-        return Column(
-            Integer,
-            nullable=False,
-            server_default='1'
-        )
-
-    @declared_attr
-    def created_at(cls) -> Column:
-        return Column(
-            DateTime(timezone=True),
-            nullable=False,
-            server_default=func.now()
-        )
-
-    @declared_attr
-    def updated_at(cls) -> Column:
-        return Column(
-            DateTime(timezone=True),
-            nullable=False,
-            server_default=func.now(),
-            onupdate=func.now()
-        )
-
-    # --- Аннотации типов Python + Подсказки для SQLModel/Pydantic ---
-    # Они нужны для валидации, сериализации и для того, чтобы SQLModel
-    # правильно настроил маппер.
-
+    # Используем UUID как первичный ключ
     id: uuid.UUID = Field(
-        default=None, # Значение Python по умолчанию (БД сгенерирует)
-        primary_key=True # Добавляем подсказку для SQLModel
-        # Не дублируем index, nullable и т.д. здесь
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        index=True,
+        nullable=False,
+        sa_column_kwargs={"server_default": func.gen_random_uuid()} # Генерировать UUID на стороне БД
     )
-    revision: int = Field(
-        default=1 # Значение Python по умолчанию
-    )
+    revision: int = Field(default=1, nullable=False)
     created_at: datetime = Field(
-        # Значение Python по умолчанию (фабрика)
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now()} # Использовать время БД
     )
     updated_at: datetime = Field(
-        # Значение Python по умолчанию (фабрика)
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "server_default": func.now(), # Использовать время БД
+            "onupdate": func.now()        # Обновлять время БД при апдейте записи
+        }
     )

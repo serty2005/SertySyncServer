@@ -1,4 +1,4 @@
-# app/schemas/workstation.py
+# app/schemas/workstations.py
 import uuid
 from datetime import datetime
 from typing import List, Optional, Dict, Any

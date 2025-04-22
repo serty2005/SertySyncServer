@@ -22,6 +22,7 @@ RESTO_PATH = "/resto" # Стандартный путь
 class ServerBase(SQLModel):
     name: str = Field(..., min_length=1, max_length=255)
     server_type: ServerType = Field(default=ServerType.RMS)
+    point_id: uuid.UUID
     # iiko_uid валидируется ниже
     iiko_uid: str = Field(..., max_length=11)
     license_type: LicenseType = Field(default=LicenseType.CLOUD)
@@ -164,6 +165,7 @@ class ServerCreate(ServerBase):
 class ServerRead(ServerBase):
     id: uuid.UUID
     revision: int
+    point_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
 

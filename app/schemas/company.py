@@ -19,6 +19,7 @@ class CompanyCreate(CompanyBase):
 class CompanyRead(CompanyBase):
     id: uuid.UUID
     revision: int
+    points: Optional[uuid.UUID]
     created_at: datetime
     updated_at: datetime
 

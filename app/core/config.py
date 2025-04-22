@@ -1,4 +1,5 @@
 # app/core/config.py
+from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import BaseSettings
 from pydantic import AnyHttpUrl, PostgresDsn, validator, field_validator
 from typing import List, Union, Optional, Dict, Any
@@ -25,13 +26,17 @@ class Settings(BaseSettings):
     POSTGRES_DB: Optional[str] = None
     DATABASE_URL: Optional[PostgresDsn] = None
 
-    @validator("DATABASE_URL", pre=True, always=True)
-    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+    @field_validator("DATABASE_URL", mode='before')
+    @classmethod
+    def assemble_db_connection(cls, v: Optional[str], info: ValidationInfo) -> Any:
+        values = info.data
+
         if isinstance(v, str):
             # Если DATABASE_URL уже задан явно, используем его
             return v
         # Если DATABASE_URL не задан, пытаемся собрать из отдельных компонентов
         # (Это может быть полезно для некоторых сред развертывания)
+
         server = values.get("POSTGRES_SERVER")
         user = values.get("POSTGRES_USER")
         password = values.get("POSTGRES_PASSWORD")
@@ -44,7 +49,8 @@ class Settings(BaseSettings):
                 host=server,
                 path=f"/{db}",
             )
-        raise ValueError("Database connection details are missing. Provide DATABASE_URL or POSTGRES_SERVER, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB.")
+        # Вернём raise если не устроит проверка pydantic
+        # raise ValueError("Database connection details are missing. Provide DATABASE_URL or POSTGRES_SERVER, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB.")
 
 
     class Config:
